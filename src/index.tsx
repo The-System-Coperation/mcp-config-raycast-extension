@@ -230,14 +230,12 @@ export default function Command() {
       navigationTitle={currentView === "tools" ? "MCP Tools" : "MCP Agent"}
       actions={
         <ActionPanel>
-          {currentView === "tools" && (
-            <Action
-              title="Create New Mcp Tools"
-              onAction={() => push(<McpToolsForm onSave={updateMcpFiles} />)}
-              icon={Icon.Plus}
-              shortcut={{ modifiers: ["cmd"], key: "n" }}
-            />
-          )}
+          <Action
+            title="Create New Mcp Tools"
+            onAction={() => push(<McpToolsForm onSave={updateMcpFiles} />)}
+            icon={Icon.Plus}
+            shortcut={{ modifiers: ["cmd"], key: "n" }}
+          />
         </ActionPanel>
       }
     >
@@ -289,6 +287,12 @@ export default function Command() {
                       title="Edit"
                       onAction={() => push(<McpToolsForm existingFile={file} onSave={updateMcpFiles} />)}
                       icon={Icon.Pencil}
+                    />
+                    <Action
+                      title="Create New Mcp Tools"
+                      onAction={() => push(<McpToolsForm onSave={updateMcpFiles} />)}
+                      icon={Icon.Plus}
+                      shortcut={{ modifiers: ["cmd"], key: "n" }}
                     />
                     <Action
                       title="Save as Mcp Agent"
@@ -362,6 +366,12 @@ export default function Command() {
                       title="Edit"
                       onAction={() => push(<McpAgentForm files={[]} onSave={() => setTemplates(getTemplates())} />)}
                       icon={Icon.Pencil}
+                    />
+                    <Action
+                      title="Create New Mcp Agent"
+                      onAction={() => push(<McpAgentForm files={[]} onSave={() => setTemplates(getTemplates())} />)}
+                      icon={Icon.Plus}
+                      shortcut={{ modifiers: ["cmd"], key: "n" }}
                     />
                     <Action
                       title="Delete"

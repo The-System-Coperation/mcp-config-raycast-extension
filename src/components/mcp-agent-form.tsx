@@ -120,7 +120,6 @@ export default function McpAgentForm({ files, onSave }: { files: McpFile[]; onSa
         onChange={(value) => validateJson(value)}
         info="Must be valid JSON format"
         enableMarkdown={false}
-        autoFocus={true}
       />
       {files.length > 0 && (
         <Form.Description
