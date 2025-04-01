@@ -3,15 +3,27 @@ import fs from "fs";
 import path from "path";
 import { homedir } from "os";
 import { useState, useEffect } from "react";
+import React from "react";
 
 interface McpContent {
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<
+    string,
+    {
+      tools: Array<{
+        name: string;
+        description?: string;
+        parameters?: Record<string, unknown>;
+      }>;
+    }
+  >;
+  description?: string;
 }
 
 interface McpFile {
   name: string;
   content: string;
   filePath: string;
+  description?: string;
 }
 
 interface Template {
@@ -20,6 +32,20 @@ interface Template {
     name: string;
     content: McpContent;
   }>;
+  description?: string;
+}
+
+// description 파일 읽기 함수
+function getDescription(filePath: string): string {
+  try {
+    const descriptionPath = `${filePath}.description`;
+    if (fs.existsSync(descriptionPath)) {
+      return fs.readFileSync(descriptionPath, "utf-8");
+    }
+    return "";
+  } catch {
+    return "";
+  }
 }
 
 // Mcp Tools 생성/수정 폼
@@ -33,7 +59,7 @@ function McpToolsForm({
   defaultContent?: string;
 }) {
   const [jsonError, setJsonError] = useState<string>("");
-  const mcpDir = path.join(homedir(), "Desktop", "mcp");
+  const mcpDir = path.join(homedir(), "Library", "Application Support", "Raycast", "extensions", "mcp-manager", "data");
   const cursorMcpPath = path.join(homedir(), ".cursor", "mcp.json");
 
   useEffect(() => {
@@ -53,13 +79,13 @@ function McpToolsForm({
       JSON.parse(value);
       setJsonError("");
       return true;
-    } catch (e) {
-      setJsonError("유효하지 않은 JSON 형식입니다");
+    } catch {
+      setJsonError("Invalid JSON format");
       return false;
     }
   };
 
-  const handleSubmit = (values: { name: string; content: string }) => {
+  const handleSubmit = (values: { name: string; description: string; content: string }) => {
     try {
       if (!validateJson(values.content)) return;
 
@@ -71,20 +97,25 @@ function McpToolsForm({
         fs.unlinkSync(existingFile.filePath);
       }
 
-      // JSON 파일 저장
-      fs.writeFileSync(filePath, JSON.stringify(JSON.parse(values.content), null, 2));
+      // JSON 파일 저장 (description 제외)
+      const contentObj = JSON.parse(values.content);
+      fs.writeFileSync(filePath, JSON.stringify(contentObj, null, 2));
+
+      // description을 별도 파일로 저장
+      const descriptionPath = path.join(mcpDir, `${fileName}.description`);
+      fs.writeFileSync(descriptionPath, values.description);
 
       // 부모 컴포넌트에 저장 완료 알림
       onSave();
 
       showToast({
-        title: existingFile ? "수정 완료" : "저장 완료",
+        title: existingFile ? "Update Complete" : "Save Complete",
         style: Toast.Style.Success,
       });
     } catch (error) {
       showToast({
-        title: "저장 실패",
-        message: error instanceof Error ? error.message : "알 수 없는 오류",
+        title: "Save Failed",
+        message: error instanceof Error ? error.message : "Unknown error",
         style: Toast.Style.Failure,
       });
     }
@@ -96,13 +127,13 @@ function McpToolsForm({
 
       fs.writeFileSync(cursorMcpPath, values.content);
       showToast({
-        title: "Cursor MCP 파일 업데이트 완료",
+        title: "Cursor MCP file update complete",
         style: Toast.Style.Success,
       });
     } catch (error) {
       showToast({
-        title: "Cursor MCP 파일 업데이트 실패",
-        message: error instanceof Error ? error.message : "알 수 없는 오류",
+        title: "Cursor MCP file update failed",
+        message: error instanceof Error ? error.message : "Unknown error",
         style: Toast.Style.Failure,
       });
     }
@@ -112,9 +143,9 @@ function McpToolsForm({
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm title={existingFile ? "수정" : "저장"} onSubmit={handleSubmit} />
+          <Action.SubmitForm title={existingFile ? "Update" : "Save"} onSubmit={handleSubmit} />
           <Action.SubmitForm
-            title="Cursor Mcp에 적용"
+            title="Apply to Cursor Mcp"
             onSubmit={applyCursor}
             shortcut={{ modifiers: ["cmd"], key: "enter" }}
           />
@@ -123,21 +154,28 @@ function McpToolsForm({
     >
       <Form.TextField
         id="name"
-        title="파일 이름"
-        placeholder="example.json"
-        defaultValue={existingFile?.name}
-        info="파일 확장자(.json)는 자동으로 추가됩니다"
+        title="File Name"
+        placeholder="my-mcp-tools"
+        defaultValue={existingFile?.name.replace(/\.json$/, "")}
+        info="File extension (.json) will be added automatically"
+      />
+      <Form.TextField
+        id="description"
+        title="Description"
+        placeholder="Enter a description for your MCP Tools"
+        defaultValue={existingFile ? getDescription(existingFile.filePath) : ""}
       />
       <Form.TextArea
         id="content"
-        title="JSON 내용"
+        title="JSON Content"
         placeholder='{
   "key": "value"
 }'
         defaultValue={existingFile?.content || defaultContent}
         error={jsonError}
         onChange={(value) => validateJson(value)}
-        info="유효한 JSON 형식이어야 합니다"
+        info="Must be valid JSON format"
+        enableMarkdown={false}
       />
     </Form>
   );
@@ -146,7 +184,38 @@ function McpToolsForm({
 // 템플릿 저장 폼
 // @todo: 저장 위치 수정 필요
 function TemplateForm({ files, onSave }: { files: McpFile[]; onSave: () => void }) {
-  const templateDir = path.join(homedir(), "Desktop", "mcp", "templates");
+  const templateDir = path.join(
+    homedir(),
+    "Library",
+    "Application Support",
+    "Raycast",
+    "extensions",
+    "mcp-manager",
+    "data",
+    "templates",
+  );
+  const [jsonError, setJsonError] = useState<string>("");
+
+  // 초기 JSON 내용 생성
+  const initialContent = React.useMemo(() => {
+    if (files.length === 0) return "";
+
+    const mergedContent: McpContent = {
+      mcpServers: {},
+    };
+
+    files.forEach((file) => {
+      const content = JSON.parse(file.content);
+      if (content.mcpServers) {
+        mergedContent.mcpServers = {
+          ...mergedContent.mcpServers,
+          ...content.mcpServers,
+        };
+      }
+    });
+
+    return JSON.stringify(mergedContent, null, 2);
+  }, [files]);
 
   useEffect(() => {
     if (!fs.existsSync(templateDir)) {
@@ -154,31 +223,31 @@ function TemplateForm({ files, onSave }: { files: McpFile[]; onSave: () => void 
     }
   }, []);
 
-  const handleSubmit = (values: { name: string }) => {
+  const validateJson = (value: string): boolean => {
     try {
+      JSON.parse(value);
+      setJsonError("");
+      return true;
+    } catch {
+      setJsonError("Invalid JSON format");
+      return false;
+    }
+  };
+
+  const handleSubmit = (values: { name: string; description: string; content: string }) => {
+    try {
+      if (!validateJson(values.content)) return;
+
       const templateName = values.name.endsWith(".json") ? values.name : `${values.name}.json`;
       const templatePath = path.join(templateDir, templateName);
 
-      // 파일들을 병합
-      const mergedContent: McpContent = {
-        mcpServers: {},
-      };
-
-      files.forEach((file) => {
-        const content = JSON.parse(file.content);
-        if (content.mcpServers) {
-          mergedContent.mcpServers = {
-            ...mergedContent.mcpServers,
-            ...content.mcpServers,
-          };
-        }
-      });
-
+      const content = JSON.parse(values.content);
       const templateContent = {
+        description: values.description,
         files: [
           {
             name: templateName,
-            content: mergedContent,
+            content: content,
           },
         ],
       };
@@ -187,13 +256,13 @@ function TemplateForm({ files, onSave }: { files: McpFile[]; onSave: () => void 
       onSave();
 
       showToast({
-        title: "템플릿 저장 완료",
+        title: "MCP Agent save complete",
         style: Toast.Style.Success,
       });
     } catch (error) {
       showToast({
-        title: "템플릿 저장 실패",
-        message: error instanceof Error ? error.message : "알 수 없는 오류",
+        title: "MCP Agent save failed",
+        message: error instanceof Error ? error.message : "Unknown error",
         style: Toast.Style.Failure,
       });
     }
@@ -203,23 +272,47 @@ function TemplateForm({ files, onSave }: { files: McpFile[]; onSave: () => void 
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Mcp Agent 저장" onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Save as Mcp Agent" onSubmit={handleSubmit} />
         </ActionPanel>
       }
     >
       <Form.TextField
         id="name"
-        title="MCP Agent 이름"
-        placeholder="my-mcp-agent.json"
-        info="MCP Agent 이름을 입력하세요"
+        title="MCP Agent Name"
+        placeholder="my-mcp-agent"
+        info={files.length > 0 ? `Will be created from ${files.length} selected files` : "Enter MCP Agent name"}
       />
+      <Form.TextField id="description" title="Description" placeholder="Enter a description for your MCP Agent" />
+      <Form.TextArea
+        id="content"
+        title="JSON Content"
+        defaultValue={initialContent}
+        placeholder='{
+  "mcpServers": {
+    "your-server-name": {
+      "tools": []
+    }
+  }
+}'
+        error={jsonError}
+        onChange={(value) => validateJson(value)}
+        info="Must be valid JSON format"
+        enableMarkdown={false}
+        autoFocus={true}
+      />
+      {files.length > 0 && (
+        <Form.Description
+          title="Included Files"
+          text={files.map((file) => file.name.replace(/\.json$/, "")).join(", ")}
+        />
+      )}
     </Form>
   );
 }
 
 export default function Command() {
   const { push } = useNavigation();
-  const mcpDir = path.join(homedir(), "Desktop", "mcp");
+  const mcpDir = path.join(homedir(), "Library", "Application Support", "Raycast", "extensions", "mcp-manager", "data");
   const templateDir = path.join(mcpDir, "templates");
   const [mcpFiles, setMcpFiles] = useState<McpFile[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -236,18 +329,20 @@ export default function Command() {
 
       const files = fs.readdirSync(mcpDir);
       return files
-        .filter((file) => file.endsWith(".json"))
+        .filter((file) => file.endsWith(".json") && !file.endsWith(".description"))
         .map((file) => {
           const filePath = path.join(mcpDir, file);
           const content = fs.readFileSync(filePath, "utf-8");
+          const description = getDescription(filePath);
           return {
             name: file,
             content,
             filePath,
+            description,
           };
         });
     } catch (error) {
-      console.error("MCP 파일 읽기 실패:", error);
+      console.error("Failed to read MCP files:", error);
       return [];
     }
   };
@@ -269,10 +364,11 @@ export default function Command() {
           return {
             name: file,
             files: content.files,
+            description: content.description,
           };
         });
     } catch (error) {
-      console.error("MCP Agent 읽기 실패:", error);
+      console.error("Failed to read MCP Agent:", error);
       return [];
     }
   };
@@ -322,8 +418,8 @@ export default function Command() {
       showToast({
         title:
           target === "both"
-            ? "선택된 파일들이 Cursor와 Claude에 성공적으로 적용되었습니다"
-            : `선택된 파일들이 ${target === "cursor" ? "Cursor" : "Claude"}에 성공적으로 적용되었습니다`,
+            ? "Selected files have been successfully applied to Cursor and Claude"
+            : `Selected files have been successfully applied to ${target === "cursor" ? "Cursor" : "Claude"}`,
         style: Toast.Style.Success,
       });
 
@@ -331,8 +427,8 @@ export default function Command() {
       setSelectedFiles(new Set());
     } catch (error) {
       showToast({
-        title: "파일 병합 실패",
-        message: error instanceof Error ? error.message : "알 수 없는 오류",
+        title: "File merge failed",
+        message: error instanceof Error ? error.message : "Unknown error",
         style: Toast.Style.Failure,
       });
     }
@@ -374,13 +470,13 @@ export default function Command() {
       fs.writeFileSync(claudeMcpPath, JSON.stringify(mergedContent, null, 2));
 
       showToast({
-        title: "Mcp Agent가 Cursor와 Claude에 성공적으로 적용되었습니다",
+        title: "MCP Agent has been successfully applied to Cursor and Claude",
         style: Toast.Style.Success,
       });
     } catch (error) {
       showToast({
-        title: "Mcp Agent 적용 실패",
-        message: error instanceof Error ? error.message : "알 수 없는 오류",
+        title: "MCP Agent application failed",
+        message: error instanceof Error ? error.message : "Unknown error",
         style: Toast.Style.Failure,
       });
     }
@@ -400,15 +496,20 @@ export default function Command() {
   const handleDelete = (file: McpFile) => {
     try {
       fs.unlinkSync(file.filePath);
+      // description 파일도 삭제
+      const descriptionPath = `${file.filePath}.description`;
+      if (fs.existsSync(descriptionPath)) {
+        fs.unlinkSync(descriptionPath);
+      }
       updateMcpFiles();
       showToast({
-        title: "삭제 완료",
+        title: "Delete complete",
         style: Toast.Style.Success,
       });
-    } catch (e) {
+    } catch (error) {
       showToast({
-        title: "삭제 실패",
-        message: e instanceof Error ? e.message : "알 수 없는 오류",
+        title: "Delete failed",
+        message: error instanceof Error ? error.message : "Unknown error",
         style: Toast.Style.Failure,
       });
     }
@@ -419,7 +520,7 @@ export default function Command() {
       isShowingDetail
       searchBarAccessory={
         <List.Dropdown
-          tooltip="보기 선택"
+          tooltip="Select View"
           storeValue={true}
           value={currentView}
           onChange={(value) => setCurrentView(value as "tools" | "agent")}
@@ -433,7 +534,7 @@ export default function Command() {
         <ActionPanel>
           {currentView === "tools" && (
             <Action
-              title="새 Mcp Tools 생성"
+              title="Create New Mcp Tools"
               onAction={() => push(<McpToolsForm onSave={updateMcpFiles} />)}
               icon={Icon.Plus}
               shortcut={{ modifiers: ["cmd"], key: "n" }}
@@ -445,13 +546,13 @@ export default function Command() {
       {currentView === "tools" ? (
         <>
           <List.EmptyView
-            title="MCP 파일이 없습니다"
-            description="새로운 MCP 파일을 생성해보세요"
+            title="No MCP files"
+            description="Create a new MCP file"
             icon="✨"
             actions={
               <ActionPanel>
                 <Action
-                  title="새 Mcp 파일 생성"
+                  title="Create New Mcp File"
                   onAction={() => push(<McpToolsForm onSave={updateMcpFiles} />)}
                   icon={Icon.Plus}
                   shortcut={{ modifiers: ["cmd"], key: "n" }}
@@ -463,12 +564,12 @@ export default function Command() {
             {mcpFiles.map((file) => (
               <List.Item
                 key={file.name}
-                title={file.name}
-                subtitle={file.content}
+                title={file.name.replace(/\.json$/, "")}
+                subtitle={file.description || undefined}
                 accessories={[
                   {
                     icon: selectedFiles.has(file.name) ? Icon.CircleProgress100 : Icon.Circle,
-                    tooltip: selectedFiles.has(file.name) ? "선택됨" : "선택되지 않음",
+                    tooltip: selectedFiles.has(file.name) ? "Selected" : "Not selected",
                   },
                 ]}
                 detail={
@@ -479,34 +580,21 @@ export default function Command() {
                 actions={
                   <ActionPanel>
                     <Action
-                      title={selectedFiles.has(file.name) ? "선택 해제" : "선택"}
-                      onAction={() => {
-                        const newSelected = new Set(selectedFiles);
-                        if (selectedFiles.has(file.name)) {
-                          newSelected.delete(file.name);
-                        } else {
-                          newSelected.add(file.name);
-                        }
-                        setSelectedFiles(newSelected);
-                      }}
-                      icon={selectedFiles.has(file.name) ? Icon.CircleProgress100 : Icon.Circle}
+                      title="Apply to Cursor and Claude"
+                      onAction={() => mergeMcpFiles("both")}
+                      icon={Icon.CheckCircle}
+                      shortcut={{ modifiers: ["cmd"], key: "enter" }}
                     />
+                    <Action title="Apply to Cursor" onAction={() => mergeMcpFiles("cursor")} icon={Icon.CheckCircle} />
+                    <Action title="Apply to Claude" onAction={() => mergeMcpFiles("claude")} icon={Icon.CheckCircle} />
                     <Action
-                      title="수정"
+                      title="Edit"
                       onAction={() => push(<McpToolsForm existingFile={file} onSave={updateMcpFiles} />)}
-                      icon={{ source: "✏️" }}
+                      icon={Icon.Pencil}
                     />
                     <Action
-                      title="새 Mcp Tools 생성"
-                      onAction={() => push(<McpToolsForm onSave={updateMcpFiles} />)}
-                      icon={Icon.Plus}
-                      shortcut={{ modifiers: ["cmd"], key: "n" }}
-                    />
-                    <Action title="Mcp Agent 적용" onAction={() => mergeMcpFiles("both")} icon={Icon.CheckCircle} />
-                    <Action
-                      title="Mcp Agent 저장"
+                      title="Save as Mcp Agent"
                       onAction={() => {
-                        // 선택된 모든 파일을 가져옴
                         const filesToSave =
                           selectedFiles.size > 0 ? mcpFiles.filter((f) => selectedFiles.has(f.name)) : [file];
 
@@ -523,7 +611,7 @@ export default function Command() {
                       icon={Icon.SaveDocument}
                     />
                     <Action
-                      title="삭제"
+                      title="Delete"
                       onAction={() => handleDelete(file)}
                       style={Action.Style.Destructive}
                       icon={Icon.Trash}
@@ -537,36 +625,54 @@ export default function Command() {
       ) : (
         <>
           <List.EmptyView
-            title="MCP Agent가 없습니다"
-            description="파일을 선택하여 새로운 MCP Agent를 만들어보세요"
+            title="No MCP Agents"
+            description="Select files to create a new MCP Agent"
             icon="✨"
+            actions={
+              <ActionPanel>
+                <Action
+                  title="Create New Mcp Agent"
+                  onAction={() => push(<TemplateForm files={[]} onSave={() => setTemplates(getTemplates())} />)}
+                  icon={Icon.Plus}
+                  shortcut={{ modifiers: ["cmd"], key: "n" }}
+                />
+              </ActionPanel>
+            }
           />
           <List.Section>
             {templates.map((template) => (
               <List.Item
                 key={template.name}
-                title={template.name}
-                subtitle={`${template.files.length}개의 파일`}
+                title={template.name.replace(/\.json$/, "")}
+                subtitle={template.description || undefined}
                 detail={
                   <List.Item.Detail
-                    markdown={`### 포함된 파일:\n${template.files
-                      .map(
-                        (file) => `\n#### ${file.name}\n\`\`\`json\n${JSON.stringify(file.content, null, 2)}\n\`\`\``,
-                      )
+                    markdown={`\n${template.files
+                      .map((file) => `\`\`\`json\n${JSON.stringify(file.content, null, 2)}\n\`\`\``)
                       .join("\n")}`}
                   />
                 }
                 actions={
                   <ActionPanel>
-                    <Action title="Mcp Agent 적용" onAction={() => applyTemplate(template)} icon={Icon.CheckCircle} />
                     <Action
-                      title="삭제"
+                      title="Apply to Cursor and Claude"
+                      onAction={() => applyTemplate(template)}
+                      icon={Icon.CheckCircle}
+                      shortcut={{ modifiers: ["cmd"], key: "enter" }}
+                    />
+                    <Action
+                      title="Edit"
+                      onAction={() => push(<TemplateForm files={[]} onSave={() => setTemplates(getTemplates())} />)}
+                      icon={Icon.Pencil}
+                    />
+                    <Action
+                      title="Delete"
                       onAction={() => {
                         const templatePath = path.join(templateDir, template.name);
                         fs.unlinkSync(templatePath);
                         setTemplates(getTemplates());
                         showToast({
-                          title: "Mcp Agent 삭제 완료",
+                          title: "MCP Agent delete complete",
                           style: Toast.Style.Success,
                         });
                       }}

@@ -1,17 +1,20 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "name": "mcp-manager",
-  "title": "MCP Manager 설명",
-  "description": "A comprehensive MCP file management tool for AI development. Create, edit, and apply MCP configurations for both Cursor and Claude. Features include JSON file creation, template management, and seamless integration with AI development workflows.",
-  "icon": "extension-icon.png",
+  "title": "MCP Manager",
+  "description": "Manage MCP (Minecraft Control Protocol) settings for Cursor and Claude. Create, edit, and apply MCP configurations with ease.",
+  "categories": [
+    "Developer Tools"
+  ],
+  "icon": "assets/extension-icon.png",
   "author": "yeeed711",
   "license": "MIT",
   "commands": [
     {
       "name": "index",
       "title": "MCP Manager",
-      "description": "Manage MCP configurations for AI development",
+      "description": "Manage MCP configurations for Cursor and Claude",
       "mode": "view"
     }
   ],

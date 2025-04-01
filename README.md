@@ -1,78 +1,82 @@
 # MCP Manager
 
-MCP Manager는 AI 개발을 위한 MCP 파일 관리 도구입니다. Cursor와 Claude에서 사용할 수 있는 MCP 설정을 쉽게 생성하고 관리할 수 있습니다.
+A Raycast extension for managing MCP (Minecraft Control Protocol) settings for Cursor and Claude. This extension allows you to create, manage, and apply MCP tools and agents to both Cursor and Claude applications.
 
-## 주요 기능
+## Features
 
-### 1. MCP 파일 관리
+### MCP Tools Management
 
-- 새로운 MCP JSON 파일 생성
-- 기존 MCP 파일 수정 및 관리
-- Desktop의 `mcp` 폴더에 파일 자동 저장
+- Create and manage MCP tools with JSON configuration
+- Add descriptions to tools for better organization
+- Apply tools directly to Cursor
+- Preview JSON content before saving
 
-### 2. 템플릿 시스템
+### MCP Agent Management
 
-- 자주 사용하는 MCP 설정을 템플릿으로 저장
-- 여러 MCP 파일을 하나의 템플릿으로 통합
-- 템플릿을 기반으로 새로운 MCP 파일 생성
+- Create agents by combining multiple MCP tools
+- Add descriptions to agents
+- Apply agents to both Cursor and Claude
+- Preview merged JSON content
 
-### 3. AI 도구 통합
+## Installation
 
-- Cursor MCP 설정 적용
-- Claude MCP 설정 적용
-- `.cursor/mcp.json` 파일 자동 업데이트
+1. Install the extension from Raycast Store
+2. The extension will automatically create necessary directories:
+   - `~/Library/Application Support/Raycast/extensions/mcp-manager/data` for MCP tools
+   - `~/Library/Application Support/Raycast/extensions/mcp-manager/data/templates` for MCP agents
 
-## 사용 방법
+## Usage
 
-### 새 MCP 파일 생성
+### Managing MCP Tools
 
-1. `⌘ + N` 단축키 또는 "새 Mcp 파일 생성" 버튼 클릭
-2. 파일 이름과 JSON 내용 입력
-3. 저장 버튼 클릭
+1. Open Raycast and search for "MCP Tools"
+2. Click "Create New MCP Tools" or use the shortcut (⌘N)
+3. Enter a name and description for your tools
+4. Add your JSON configuration
+5. Save or apply directly to Cursor
 
-### 새 JSON 파일 생성
+### Managing MCP Agents
 
-1. `⌘ + Shift + N` 단축키 또는 "새 JSON 파일 생성" 버튼 클릭
-2. 기본 MCP 서버 설정이 포함된 폼에서 내용 수정
-3. 저장 버튼 클릭
+1. Switch to "MCP Agent" view using the dropdown
+2. Select multiple MCP tools to create an agent
+3. Click "Save as MCP Agent"
+4. Enter a name and description for your agent
+5. Apply the agent to both Cursor and Claude
 
-### 템플릿 저장
+## File Structure
 
-1. 하나 이상의 MCP 파일 선택
-2. "템플릿으로 저장" 액션 선택
-3. 템플릿 이름 입력
-4. 저장 버튼 클릭
+- MCP Tools: `~/Library/Application Support/Raycast/extensions/mcp-manager/data/*.json`
+- Tool Descriptions: `~/Library/Application Support/Raycast/extensions/mcp-manager/data/*.json.description`
+- MCP Agents: `~/Library/Application Support/Raycast/extensions/mcp-manager/data/templates/*.json`
 
-### Cursor/Claude MCP 적용
-
-1. 적용할 MCP 파일 선택
-2. "Cursor Mcp에 적용" 또는 "Claude Mcp에 적용" 액션 선택
-3. 설정이 자동으로 적용됨
-
-## 설치 방법
-
-1. Raycast Store에서 "MCP Manager" 검색
-2. 설치 버튼 클릭
-3. Raycast에서 `⌘ + Space`를 눌러 "MCP Manager" 실행
-
-## 요구사항
+## Requirements
 
 - macOS
 - Raycast
-- Cursor 또는 Claude (선택사항)
+- Cursor (optional)
+- Claude (optional)
 
-## 라이선스
+## Version History
+
+### [1.0.0] - 2024-03-21
+
+- Initial release
+- MCP Tools management
+- MCP Agent management
+- Direct application to Cursor and Claude
+
+## License
 
 MIT License
 
-## 기여하기
+## Contributing
 
-1. 이 저장소를 포크
-2. 새로운 브랜치 생성 (`git checkout -b feature/amazing-feature`)
-3. 변경사항 커밋 (`git commit -m 'Add some amazing feature'`)
-4. 브랜치에 푸시 (`git push origin feature/amazing-feature`)
-5. Pull Request 생성
+1. Fork this repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-## 작성자
+## Author
 
 - yeeed711
