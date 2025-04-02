@@ -273,8 +273,30 @@ export default function Command() {
                     markdown={`\`\`\`json\n${JSON.stringify(JSON.parse(file.content), null, 2)}\n\`\`\``}
                   />
                 }
+                onSelect={() => {
+                  const newSelectedFiles = new Set(selectedFiles);
+                  if (newSelectedFiles.has(file.name)) {
+                    newSelectedFiles.delete(file.name);
+                  } else {
+                    newSelectedFiles.add(file.name);
+                  }
+                  setSelectedFiles(newSelectedFiles);
+                }}
                 actions={
                   <ActionPanel>
+                    <Action
+                      title={selectedFiles.has(file.name) ? "Deselect" : "Select"}
+                      onAction={() => {
+                        const newSelectedFiles = new Set(selectedFiles);
+                        if (newSelectedFiles.has(file.name)) {
+                          newSelectedFiles.delete(file.name);
+                        } else {
+                          newSelectedFiles.add(file.name);
+                        }
+                        setSelectedFiles(newSelectedFiles);
+                      }}
+                      icon={selectedFiles.has(file.name) ? Icon.Circle : Icon.CircleProgress100}
+                    />
                     <Action
                       title="Apply to Cursor and Claude"
                       onAction={() => mergeMcpFiles("both")}
