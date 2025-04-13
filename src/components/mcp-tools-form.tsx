@@ -81,7 +81,10 @@ export default function McpToolsForm({
     try {
       if (!validateJson(values.content)) return;
 
-      fs.writeFileSync(cursorMcpPath, values.content);
+      // 문자열을 JSON으로 파싱한 후 다시 문자열로 변환하여 저장
+      const contentObj = JSON.parse(values.content);
+      fs.writeFileSync(cursorMcpPath, JSON.stringify(contentObj, null, 2));
+
       showToast({
         title: "Cursor MCP file update complete",
         style: Toast.Style.Success,

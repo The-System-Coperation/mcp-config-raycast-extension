@@ -64,6 +64,7 @@ export default function McpAgentForm({
     try {
       JSON.parse(value);
       setJsonError("");
+      console.log("validateJson", value);
       return true;
     } catch {
       setJsonError("Invalid JSON format");
