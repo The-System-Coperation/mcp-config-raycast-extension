@@ -2,6 +2,15 @@
 
 A Raycast extension for managing MCP (Minecraft Control Protocol) settings for Cursor and Claude. This extension allows you to create, manage, and apply MCP tools and agents to both Cursor and Claude applications.
 
+## Description
+- MCP Manager is a Raycast extension that helps you manage and organize MCP (Minecraft Control Protocol) configurations for both Cursor and Claude. It allows you to create, edit, and apply MCP settings with ease, supporting both individual tools and agent templates.
+
+## Screencast
+<img width="798" alt="CleanShot 2025-04-02 at 01 12 38@2x" src="https://github.com/user-attachments/assets/24385d79-60d9-45f9-8948-9189a417441b" />
+<img width="798" alt="CleanShot 2025-04-02 at 01 13 35@2x" src="https://github.com/user-attachments/assets/ae8d2324-ad83-4f58-bf06-4ffccd2bb64a" />
+<img width="784" alt="CleanShot 2025-04-02 at 01 15 00@2x" src="https://github.com/user-attachments/assets/5934adf9-894f-4ea5-993a-828e333f5f50" />
+<img width="798" alt="CleanShot 2025-04-02 at 01 17 41@2x" src="https://github.com/user-attachments/assets/ef436309-e9ef-4ff6-9da2-8169e9dbe678" />
+
 ## Features
 
 ### MCP Tools Management
